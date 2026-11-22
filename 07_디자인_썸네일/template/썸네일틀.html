@@ -1,0 +1,17 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<!-- 썸네일 틀 (1280x720). 배경 그림 파일 이름과 문구만 바꿔서 써요. -->
+<style>
+  body { margin: 0; }
+  .thumb { width: 1280px; height: 720px; position: relative; overflow: hidden;
+           background: #222 url("bg1.png") center/cover no-repeat;
+           font-family: "Apple SD Gothic Neo", sans-serif; }
+  .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.75) 0%, rgba(0,0,0,.2) 60%, transparent 100%); }
+  .big { position: absolute; left: 60px; top: 220px; font-size: 130px; font-weight: 900; color: #fff;
+         -webkit-text-stroke: 6px #000; paint-order: stroke fill; line-height: 1.05; }
+  .small { position: absolute; left: 66px; top: 470px; font-size: 48px; font-weight: 700; color: #000;
+           background: #ffd43b; padding: 6px 18px; border-radius: 8px; }
+</style></head><body>
+<div class="thumb"><div class="shade"></div>
+  <div class="big">퇴근 후<br>1시간</div>
+  <div class="small">비개발자의 AI 공부 루틴</div>
+</div></body></html>

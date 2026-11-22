@@ -1,0 +1,20 @@
+# 파이썬 가상환경, 노드 패키지
+.venv/
+venv/
+__pycache__/
+node_modules/
+
+# 비밀 정보
+.env
+.env.*
+!.env.example
+
+# 결과물 (영상·음성·이미지는 용량이 커요)
+**/결과/
+*.mov
+
+# 맥 숨김 파일
+.DS_Store
+
+# 인쇄용 안내서
+확장키트_안내서_인쇄용.pdf
