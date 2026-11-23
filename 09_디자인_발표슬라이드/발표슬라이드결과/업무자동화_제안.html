@@ -1,0 +1,85 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>주간 보고서, 버튼 한 번으로</title><style>
+:root { --기본:#1E2A3A; --강조:#F28C28; --바탕:#FFFFFF; }
+* { box-sizing:border-box; margin:0; }
+html,body { height:100%; background:#000; overflow:hidden; }
+body { font-family:"Apple SD Gothic Neo",sans-serif; word-break:keep-all; }
+#무대 { position:absolute; left:50%; top:50%; width:1280px; height:720px; transform-origin:center; }
+.장 { position:absolute; inset:0; padding:67px 86px; background:var(--바탕); color:var(--기본);
+      display:none; flex-direction:column; }
+.장.보임 { display:flex; }
+.장.어둠 { background:var(--기본); color:#fff; }
+h1 { font-size:53px; font-weight:800; line-height:1.25; }
+.선 { width:115px; height:8px; background:var(--강조); margin:22px 0 48px; }
+ul { list-style:none; padding:0; font-size:37px; line-height:1.4; }
+li + li { margin-top:22px; }
+li::before { content:"• "; }
+.큰숫자 { font-size:140px; font-weight:800; color:var(--강조); line-height:1; margin-bottom:36px; }
+.쪽 { position:absolute; right:86px; bottom:40px; font-size:19px; opacity:.7; }
+/* 표지 */
+.표지 { justify-content:center; }
+.표지 .선 { margin:0 0 28px; width:154px; height:11px; }
+.표지 h1 { font-size:72px; margin-bottom:36px; }
+.표지 li::before, .마지막 li::before { content:""; }
+/* 단계 */
+.단계들 { display:flex; align-items:center; gap:0; margin-top:30px; }
+.칸 { flex:1; height:230px; border-radius:22px; background:var(--기본); color:#fff;
+      display:flex; flex-direction:column; justify-content:center; text-align:center;
+      font-size:37px; font-weight:800; line-height:1.35; padding:0 20px; }
+.칸:last-child { background:var(--강조); }
+.화살표 { width:72px; text-align:center; font-size:46px; color:var(--기본); }
+/* 마지막 */
+.마지막 h1 { font-size:64px; margin:40px 0 60px; }
+.마지막 li { display:flex; align-items:center; gap:36px; font-size:43px; font-weight:800; }
+.마지막 li + li { margin-top:36px; }
+.번호 { width:86px; height:86px; border-radius:50%; background:var(--강조); color:var(--기본);
+        display:flex; align-items:center; justify-content:center; font-size:43px; }
+/* 차트 */
+.차트 { flex:1; display:flex; flex-direction:column; }
+.범례 { display:flex; gap:36px; justify-content:center; font-size:26px; margin-bottom:10px; }
+.범례 i { display:inline-block; width:22px; height:22px; margin-right:10px; vertical-align:-2px; }
+.막대판 { flex:1; display:flex; align-items:flex-end; justify-content:space-around;
+          border-bottom:3px solid var(--기본); }
+.묶음 { display:flex; align-items:flex-end; gap:12px; height:100%; }
+.막대 { width:90px; position:relative; transition:height .8s ease; }
+.막대 b { position:absolute; top:-40px; left:50%; transform:translateX(-50%);
+          font-size:26px; white-space:nowrap; }
+.이름표 { display:flex; justify-content:space-around; font-size:31px; padding-top:12px; }
+/* 대본 */
+#대본 { position:fixed; left:0; right:0; bottom:0; background:rgba(0,0,0,.85); color:#fff;
+        font-size:22px; line-height:1.6; padding:18px 40px; display:none; }
+#대본.보임 { display:block; }
+</style></head><body><div id="무대"><section class="장 어둠 표지" data-대본="안녕하세요. 오늘은 매주 만드는 주간 보고서를 버튼 한 번으로 만드는 방법을 제안드리려고 합니다. 5분이면 충분합니다."><div class="선"></div><h1>주간 보고서, 버튼 한 번으로</h1><ul><li>업무 자동화 제안</li><li>발표자: ○○○</li></ul></section>
+<section class="장" data-대본="우리 팀은 매주 월요일, 5개 지점에서 실적 엑셀을 받아 주간 보고서를 만듭니다. 이 일을 담당자 한 명이 맡고 있고, 매주 약 3시간이 걸립니다."><h1>매주 3시간이 보고서에 쓰인다</h1><div class="선"></div><ul><li>월요일마다 5개 지점 엑셀 취합</li><li>담당자 1명이 혼자 전담</li></ul><div class="쪽">2</div></section>
+<section class="장" data-대본="주 3시간이면 작아 보이지만, 한 달이면 12시간, 1년이면 약 150시간입니다. 하루 8시간으로 치면 약 19일입니다."><h1>1년이면 150시간이 사라진다</h1><div class="선"></div><div class="큰숫자">150시간</div><ul><li>한 달 12시간, 1년이면 약 150시간</li></ul><div class="쪽">3</div></section>
+<section class="장" data-대본="시간만의 문제가 아닙니다. 손으로 복사하다 보니 분기마다 평균 2건의 실수가 생기고, 지난 분기에는 보고서를 두 번 다시 보내야 했습니다."><h1>복사 실수로 보고서를 다시 보낸다</h1><div class="선"></div><div class="큰숫자">분기당 2건</div><ul><li>지난 분기 보고서 재발송 2번</li></ul><div class="쪽">4</div></section>
+<section class="장" data-대본="그리고 담당자가 휴가를 가면 보고서가 늦어집니다. 방법을 아는 사람이 한 명뿐이기 때문입니다."><h1>담당자가 쉬면 보고서가 멈춘다</h1><div class="선"></div><ul><li>휴가 = 보고서 지연</li><li>대신 만들 사람이 없다</li></ul><div class="쪽">5</div></section>
+<section class="장" data-대본="그래서 제안드립니다. 지점 파일을 공유 폴더에 넣기만 하면 보고서 초안이 자동으로 만들어지는 도구입니다. 사람은 초안을 검토하고 코멘트만 쓰면 됩니다."><h1>파일만 넣으면 초안이 나온다</h1><div class="선"></div><div class="단계들"><div class="칸">공유 폴더에<br>지점 파일</div><div class="화살표">▶</div><div class="칸">보고서 초안<br>자동 생성</div><div class="화살표">▶</div><div class="칸">사람은<br>검토·코멘트만</div></div><div class="쪽">6</div></section>
+<section class="장" data-대본="기대 효과는 세 가지입니다. 작성 시간이 주 3시간에서 30분으로 줄고, 합계를 자동으로 검산해 실수 0건을 목표로 합니다. 누구나 버튼 한 번으로 만들 수 있어 휴가 공백도 없어집니다."><h1>주 3시간이 30분으로 준다</h1><div class="선"></div><ul><li>작성 시간: 주 3시간 → 30분</li><li>자동 검산으로 실수 0건 목표</li><li>누구나 버튼 한 번, 휴가 공백 없음</li></ul><div class="쪽">7</div></section>
+<section class="장" data-대본="실제로 시범 운영을 해 봤습니다. 남색이 기존 방식, 주황이 자동화 후입니다. 1월에는 같았지만, 4월에는 12시간이 2시간으로 6분의 1이 됐습니다."><h1>시범 운영 석 달 만에 시간이 1/6로</h1><div class="선"></div><div class="차트"><div class="범례"><span><i style="background:var(--기본)"></i>기존 방식</span><span><i style="background:var(--강조)"></i>자동화 후</span></div><div class="막대판"><div class="묶음"><div class="막대" data-높이="81.2%" style="height:81.2%;background:var(--기본)"><b>12시간</b></div><div class="막대" data-높이="81.2%" style="height:81.2%;background:var(--강조)"><b>12시간</b></div></div><div class="묶음"><div class="막대" data-높이="88.0%" style="height:88.0%;background:var(--기본)"><b>13시간</b></div><div class="막대" data-높이="40.6%" style="height:40.6%;background:var(--강조)"><b>6시간</b></div></div><div class="묶음"><div class="막대" data-높이="81.2%" style="height:81.2%;background:var(--기본)"><b>12시간</b></div><div class="막대" data-높이="16.9%" style="height:16.9%;background:var(--강조)"><b>2.5시간</b></div></div><div class="묶음"><div class="막대" data-높이="81.2%" style="height:81.2%;background:var(--기본)"><b>12시간</b></div><div class="막대" data-높이="13.5%" style="height:13.5%;background:var(--강조)"><b>2시간</b></div></div></div><div class="이름표"><span>1월</span><span>2월</span><span>3월</span><span>4월</span></div></div><div class="쪽">8</div></section>
+<section class="장" data-대본="일정은 간단합니다. 첫 2주 동안 도구를 만들고, 3~4주차에 한 지점으로 시험한 뒤, 5주차부터 전체에 적용합니다."><h1>5주면 전체에 적용할 수 있다</h1><div class="선"></div><div class="단계들"><div class="칸">1~2주<br>도구 만들기</div><div class="화살표">▶</div><div class="칸">3~4주<br>한 지점 시험</div><div class="화살표">▶</div><div class="칸">5주~<br>전체 적용</div></div><div class="쪽">9</div></section>
+<section class="장 어둠 마지막" data-대본="오늘 요청드릴 것은 두 가지입니다. 공유 폴더 권한, 그리고 시범 운영 4주 승인입니다. 감사합니다. 질문 받겠습니다."><h1>두 가지를 승인해 주세요</h1><ul><li><span class="번호">1</span>공유 폴더 권한</li><li><span class="번호">2</span>시범 운영 4주</li></ul><div class="쪽">10</div></section></div><div id="대본"></div><script>
+const 장들 = [...document.querySelectorAll('.장')];
+let 지금 = Math.max(0, Math.min(장들.length - 1, (parseInt(location.hash.slice(1)) || 1) - 1));
+function 보이기() {
+  장들.forEach((s, i) => s.classList.toggle('보임', i === 지금));
+  document.getElementById('대본').textContent = 장들[지금].dataset.대본 || '(대본 없음)';
+  history.replaceState(null, '', '#' + (지금 + 1));
+  장들[지금].querySelectorAll('.막대').forEach(m => { m.style.height = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => m.style.height = m.dataset.높이)); });
+}
+function 맞추기() {
+  const 배율 = Math.min(innerWidth / 1280, innerHeight / 720);
+  document.getElementById('무대').style.transform = `translate(-50%,-50%) scale(${배율})`;
+}
+addEventListener('keydown', ev => {
+  if (['ArrowRight', ' ', 'PageDown'].includes(ev.key)) 지금 = Math.min(지금 + 1, 장들.length - 1);
+  else if (['ArrowLeft', 'PageUp'].includes(ev.key)) 지금 = Math.max(지금 - 1, 0);
+  else if (ev.key === 'f' || ev.key === 'F') document.documentElement.requestFullscreen?.();
+  else if (ev.key === 'n' || ev.key === 'N') document.getElementById('대본').classList.toggle('보임');
+  else return;
+  ev.preventDefault(); 보이기();
+});
+addEventListener('click', () => { 지금 = Math.min(지금 + 1, 장들.length - 1); 보이기(); });
+addEventListener('resize', 맞추기);
+맞추기(); 보이기();
+</script></body></html>
