@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>채널 성과 대시보드</title>
+<style>
+  :root {
+    --bg: #f4f3ef; --card: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #8a8984;
+    --line: #e4e3de; --accent: #2a78d6; --base: #c9c8c2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111110; --card: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #8f8e86;
+            --line: #2c2c2a; --accent: #3987e5; --base: #4a4a46; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font-family: "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--ink2); font-size: 14px; margin-bottom: 20px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+  .filters span { color: var(--ink2); font-size: 14px; margin-right: 4px; }
+  .filters button { border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    padding: 7px 16px; border-radius: 999px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  .filters button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .kpi .label { color: var(--ink2); font-size: 13px; }
+  .kpi .value { font-size: 28px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .card h2 { font-size: 16px; margin: 0 0 4px; }
+  .card .note { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: 92px 1fr 70px; align-items: center; gap: 8px;
+         margin: 7px 0; font-size: 13px; }
+  .row .name { color: var(--ink2); text-align: right; }
+  .row .track { height: 18px; position: relative; }
+  .row .bar { height: 100%; border-radius: 0 4px 4px 0; background: var(--base); transition: width .3s; }
+  .row .bar.hi { background: var(--accent); }
+  .row .num { color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .row:hover .name, .row:hover .num { color: var(--ink); font-weight: 600; }
+  .empty { color: var(--muted); font-size: 13px; padding: 20px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--ink2); font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink2); }
+  @media (max-width: 760px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: 1fr; }
+    .hide-m { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>채널 성과 대시보드</h1>
+  <div class="sub">가상 채널 영상 120개 · 파란 막대가 가장 높은 묶음이에요 · 막대 숫자는 묶음별 평균이에요</div>
+
+  <div class="filters" id="f형식"><span>형식</span></div>
+  <div class="filters" id="f요일"><span>요일</span></div>
+
+  <div class="kpis">
+    <div class="card kpi"><div class="label">영상 수</div><div class="value" id="k수">-</div></div>
+    <div class="card kpi"><div class="label">평균 조회수</div><div class="value" id="k조회">-</div></div>
+    <div class="card kpi"><div class="label">평균 클릭률</div><div class="value" id="k클릭">-</div></div>
+    <div class="card kpi"><div class="label">평균 시청지속률</div><div class="value" id="k지속">-</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>요일별 평균 조회수</h2><div class="note">화·목요일이 높은지 확인해 보세요</div><div id="c요일"></div></div>
+    <div class="card"><h2>제목 유형별 평균 클릭률</h2><div class="note">숫자가 들어간 유형이 높은지 확인해 보세요</div><div id="c유형"></div></div>
+    <div class="card"><h2>롱폼 길이별 평균 시청지속률</h2><div class="note">롱폼만 계산해요 · 8~12분이 가장 높아요</div><div id="c길이"></div></div>
+    <div class="card"><h2>제목 유형별 평균 조회수</h2><div class="note">'따라하기 실습'이 들어간 유형이 높은지 확인해 보세요</div><div id="c유형조회"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>조회수 상위 10개 영상</h2><div class="note">지금 고른 필터 안에서의 순위예요</div>
+    <table>
+      <thead><tr><th>제목</th><th class="hide-m">유형</th><th>형식</th><th>요일</th>
+        <th class="n">길이</th><th class="n">조회수</th><th class="n hide-m">클릭률</th></tr></thead>
+      <tbody id="top"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const 영상 = __DATA__;
+const 상태 = { 형식: "전체", 요일: "전체" };
+
+function 버튼(id, 키, 값들) {
+  const box = document.getElementById(id);
+  for (const v of ["전체", ...값들]) {
+    const b = document.createElement("button");
+    b.textContent = v;
+    b.onclick = () => { 상태[키] = v; 그리기(); };
+    box.appendChild(b);
+  }
+}
+버튼("f형식", "형식", ["쇼츠", "롱폼"]);
+버튼("f요일", "요일", ["월", "화", "수", "목", "금", "토", "일"]);
+
+const 평균 = (arr, k) => arr.length ? arr.reduce((s, x) => s + x[k], 0) / arr.length : 0;
+
+function 묶어서평균(arr, 묶기, 순서, 값키) {
+  return 순서.map(이름 => {
+    const 그룹 = arr.filter(x => 묶기(x) === 이름);
+    return { 이름, 개수: 그룹.length, 값: 평균(그룹, 값키) };
+  }).filter(g => g.개수 > 0);
+}
+
+function 막대(id, 묶음, 표시) {
+  const box = document.getElementById(id);
+  if (!묶음.length) { box.innerHTML = '<div class="empty">이 필터에는 해당 영상이 없어요</div>'; return; }
+  const 최대 = Math.max(...묶음.map(g => g.값));
+  box.innerHTML = 묶음.map(g => `
+    <div class="row" title="${g.이름}: ${표시(g.값)} (영상 ${g.개수}개)">
+      <div class="name">${g.이름}</div>
+      <div class="track"><div class="bar ${g.값 === 최대 ? "hi" : ""}" style="width:${최대 ? g.값 / 최대 * 100 : 0}%"></div></div>
+      <div class="num">${표시(g.값)}</div>
+    </div>`).join("");
+}
+
+const 회 = v => Math.round(v).toLocaleString() + "회";
+const 퍼 = v => v.toFixed(1) + "%";
+const 유형순서 = ["숫자+실습형", "숫자형", "실습형", "총정리형", "방법제시형", "질문형", "후기형"];
+const 길이구간 = m => m < 8 ? "8분 미만" : m < 12 ? "8~12분" : m < 20 ? "12~20분" : "20분 이상";
+
+function 그리기() {
+  for (const [id, 키] of [["f형식", "형식"], ["f요일", "요일"]])
+    document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle("on", b.textContent === 상태[키]));
+
+  const 고른 = 영상.filter(x => (상태.형식 === "전체" || x.형식 === 상태.형식) &&
+                              (상태.요일 === "전체" || x.요일 === 상태.요일));
+
+  document.getElementById("k수").textContent = 고른.length + "개";
+  document.getElementById("k조회").textContent = 고른.length ? 회(평균(고른, "조회수")) : "-";
+  document.getElementById("k클릭").textContent = 고른.length ? 퍼(평균(고른, "클릭률")) : "-";
+  document.getElementById("k지속").textContent = 고른.length ? 퍼(평균(고른, "지속률")) : "-";
+
+  // 요일 차트는 요일 필터를 무시해야 비교가 돼요 (형식 필터만 적용)
+  const 형식만 = 영상.filter(x => 상태.형식 === "전체" || x.형식 === 상태.형식);
+  막대("c요일", 묶어서평균(형식만, x => x.요일, ["월", "화", "수", "목", "금", "토", "일"], "조회수"), 회);
+  막대("c유형", 묶어서평균(고른, x => x.유형, 유형순서, "클릭률"), 퍼);
+  막대("c길이", 묶어서평균(고른.filter(x => x.형식 === "롱폼"), x => 길이구간(x.분),
+        ["8분 미만", "8~12분", "12~20분", "20분 이상"], "지속률"), 퍼);
+  막대("c유형조회", 묶어서평균(고른, x => x.유형, 유형순서, "조회수"), 회);
+
+  document.getElementById("top").innerHTML = [...고른].sort((a, b) => b.조회수 - a.조회수).slice(0, 10)
+    .map(x => `<tr><td>${x.제목}</td><td class="hide-m"><span class="tag">${x.유형}</span></td><td>${x.형식}</td>
+      <td>${x.요일}</td><td class="n">${x.분}분</td><td class="n">${x.조회수.toLocaleString()}</td>
+      <td class="n hide-m">${x.클릭률}%</td></tr>`).join("");
+}
+그리기();
+</script>
+</body>
+</html>
