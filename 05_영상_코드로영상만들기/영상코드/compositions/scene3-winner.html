@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script src="../data.js"></script>
+    <style>
+      #scene3 {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; justify-content: flex-start;
+        padding: 480px 140px 0; gap: 24px;
+        font-family: "Noto Sans KR", sans-serif; color: #fdf6e3;
+      }
+      #medal { font-size: 56px; font-weight: 700; color: #f4a261; }
+      #city { font-size: 150px; font-weight: 900; line-height: 1.1; }
+      #rate { font-size: 240px; font-weight: 900; line-height: 1; color: #f4a261; letter-spacing: -0.03em; }
+      #detail { font-size: 52px; font-weight: 700; line-height: 1.5; margin-top: 24px; }
+      #detail .dim { color: #9aa5bd; }
+    </style>
+  </head>
+  <body>
+    <!-- 장면 3 (6초): 1위 도시 강조, 증가율 카운트업 -->
+    <div id="scene3" data-composition-id="scene3" data-width="1080" data-height="1920" data-duration="6">
+      <div id="medal"></div>
+      <div id="city"></div>
+      <div id="rate">+0%</div>
+      <div id="detail"></div>
+    </div>
+    <script>
+      // ===== 숫자·글자 (data.js 의 영상설정에서 가져옴) =====
+      const 설정 = window.영상설정;
+      const 처음 = 설정.처음값, 마지막 = 설정.마지막값;
+      const 증가율 = Math.round((마지막 / 처음 - 1) * 100);
+      const 단위 = 설정.단위;
+      document.getElementById("medal").textContent = `🥇 ${설정.기간}년간 가장 많이 늘어난 도시`;
+      document.getElementById("city").textContent = 설정.주인공;
+      document.getElementById("detail").innerHTML =
+        `<span class="dim">${설정.주제} 수</span> ${처음.toLocaleString()}${단위} → ${마지막.toLocaleString()}${단위}`;
+
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#scene3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0);
+      tl.fromTo("#city", { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.2);
+      // 0.6초 ~ 2.6초: 0% → 211% 숫자가 올라감 (끝에서 천천히)
+      const 진행 = { v: 0 };
+      tl.to(진행, { v: 증가율, duration: 2, ease: "power2.out",
+        onUpdate: () => { document.getElementById("rate").textContent = "+" + Math.round(진행.v) + "%"; } }, 0.6);
+      tl.fromTo("#rate", { scale: 0.9 }, { scale: 1, duration: 2, ease: "power2.out" }, 0.6);
+      tl.fromTo("#detail", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, 2.8);
+      tl.to("#scene3", { opacity: 0, duration: 0.5 }, 5.5);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["scene3"] = tl;
+    </script>
+  </body>
+</html>

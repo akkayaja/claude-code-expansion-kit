@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script src="../data.js"></script>
+    <style>
+      #scene2 {
+        position: absolute; inset: 0;
+        font-family: "Noto Sans KR", sans-serif;
+        color: #fdf6e3;
+      }
+      #chart-label { position: absolute; left: 140px; top: 220px; font-size: 48px; font-weight: 700; color: #f4a261; }
+      #year { position: absolute; left: 140px; top: 280px; font-size: 200px; font-weight: 900; line-height: 1; letter-spacing: -0.02em; }
+      .row { position: absolute; left: 0; top: 0; width: 1080px; height: 90px; }
+      .name { position: absolute; left: 60px; width: 220px; top: 0; height: 90px; line-height: 90px;
+              text-align: right; font-size: 44px; font-weight: 700; background: #14213d; }
+      .bar { position: absolute; left: 300px; top: 10px; height: 70px; border-radius: 0 12px 12px 0; }
+      .value { position: absolute; top: 0; height: 90px; line-height: 90px; font-size: 40px; font-weight: 700; padding-right: 12px; background: #14213d; }
+    </style>
+  </head>
+  <body>
+    <!-- 장면 2 (16초): 2016 → 2025, 막대가 자라며 순위대로 자리 바뀜 -->
+    <div id="scene2" data-composition-id="scene2" data-width="1080" data-height="1920" data-duration="16">
+      <div id="chart-label"></div>
+      <div id="year">2016</div>
+      <div id="rows"></div>
+    </div>
+    <script>
+      // ===== 데이터 (data.js 의 영상설정에서 가져옴) =====
+      const 설정 = window.영상설정;
+      const 연도 = 설정.연도;
+      const 데이터 = 설정.데이터;
+      document.getElementById("chart-label").textContent = `도시별 ${설정.주제} 수`;
+      // 강조색: 가장 많이 늘어난 도시 = 주황, 첫해 1위 = 청록, 나머지 = 회청색
+      const 색 = { [설정.처음1위]: "#2a9d8f", [설정.주인공]: "#f4a261" };
+      const 기본색 = "#5c6b8a";
+
+      // ===== 화면 크기 설정 =====
+      const 최대막대 = 520;        // 가장 긴 막대의 길이(px)
+      const 첫줄위치 = 580;        // 1위 막대의 세로 위치(px)
+      const 줄간격 = 105;          // 막대 사이 간격(px)
+      const 최댓값 = Math.max(...Object.values(데이터).flat());
+
+      // 도시마다 이름·막대·숫자를 한 줄씩 만든다
+      const rows = document.getElementById("rows");
+      const 줄 = {};
+      for (const 도시 of Object.keys(데이터)) {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.dataset.city = 도시;
+        row.innerHTML = `<div class="name">${도시}</div><div class="bar"></div><div class="value"></div>`;
+        row.querySelector(".bar").style.background = 색[도시] || 기본색;
+        rows.appendChild(row);
+        줄[도시] = row;
+      }
+
+      // t: 0(=2016) ~ 9(=2025) 사이의 "흐르는 시간". 소수면 두 해 사이를 부드럽게 섞는다
+      function 그리기(t) {
+        const i = Math.min(Math.floor(t), 연도.length - 2);
+        const f = t - i;
+        const 값 = {};
+        for (const 도시 in 데이터) 값[도시] = 데이터[도시][i] * (1 - f) + 데이터[도시][i + 1] * f;
+        // 그해 순위(0=1위)와 다음 해 순위를 구해, 그 사이를 미끄러지듯 이동
+        const 순위표 = (k) => Object.keys(데이터).sort((a, b) => 데이터[b][k] - 데이터[a][k]);
+        const 지금순위 = 순위표(i), 다음순위 = 순위표(i + 1);
+        // 자리바꿈은 한 해의 뒤쪽 절반 동안만 부드럽게 (겹쳐 보이는 시간을 줄임)
+        const g = Math.min(Math.max((f - 0.5) / 0.5, 0), 1);
+        const 이동 = g * g * (3 - 2 * g);
+        for (const 도시 in 데이터) {
+          const row = 줄[도시];
+          const w = 값[도시] / 최댓값 * 최대막대;
+          const r = 지금순위.indexOf(도시) * (1 - 이동) + 다음순위.indexOf(도시) * 이동;
+          row.style.transform = `translateY(${첫줄위치 + r * 줄간격}px)`;
+          row.style.zIndex = Math.round(값[도시]);   // 큰 도시가 위에 겹치도록
+          row.querySelector(".bar").style.width = w + "px";
+          const v = row.querySelector(".value");
+          v.style.left = (300 + w + 16) + "px";
+          v.textContent = Math.round(값[도시]).toLocaleString();
+        }
+        document.getElementById("year").textContent = 연도[Math.round(t)];
+      }
+
+      // ===== 타임라인 =====
+      const tl = gsap.timeline({ paused: true });
+      const 진행 = { t: 0 };
+      그리기(0);
+      tl.fromTo("#scene2", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0);
+      // 0.6초 ~ 15초: 첫해 → 끝해 (해마다 같은 시간씩 나눔)
+      tl.to(진행, { t: 연도.length - 1, duration: 14.4, ease: "none", onUpdate: () => 그리기(진행.t) }, 0.6);
+      // 15.1초: 주인공 도시만 남기고 나머지는 흐리게 → 장면 3으로 이어짐
+      tl.to(`.row:not([data-city="${설정.주인공}"])`, { opacity: 0.15, duration: 0.6 }, 15.1);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["scene2"] = tl;
+    </script>
+  </body>
+</html>

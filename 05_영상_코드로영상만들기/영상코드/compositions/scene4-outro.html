@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script src="../data.js"></script>
+    <style>
+      #scene4 {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; justify-content: flex-start;
+        padding: 620px 140px 0; gap: 40px;
+        font-family: "Noto Sans KR", sans-serif; color: #fdf6e3;
+      }
+      #outro { font-size: 96px; font-weight: 900; line-height: 1.35; }
+      #outro .hl { color: #f4a261; }
+      #source { font-size: 40px; font-weight: 500; color: #9aa5bd; margin-top: 40px; }
+    </style>
+  </head>
+  <body>
+    <!-- 장면 4 (4초): 마무리 문구 -->
+    <div id="scene4" data-composition-id="scene4" data-width="1080" data-height="1920" data-duration="4">
+      <div id="outro"></div>
+      <div id="source"></div>
+    </div>
+    <script>
+      // 첫해 1위와 끝해 1위가 다르면 "바뀌었어요", 같으면 "그대로예요"
+      const 설정 = window.영상설정;
+      const 바뀜 = 설정.처음1위 !== 설정.마지막1위;
+      document.getElementById("outro").innerHTML =
+        `${설정.아이콘} ${설정.기간}년 사이<br><span class="hl">${바뀜 ? "1위가 바뀌었어요" : "1위는 그대로예요"}</span>`;
+      document.getElementById("source").textContent = `출처: ${설정.출처}`;
+
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#outro", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 0);
+      tl.fromTo("#source", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.8);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["scene4"] = tl;
+    </script>
+  </body>
+</html>
