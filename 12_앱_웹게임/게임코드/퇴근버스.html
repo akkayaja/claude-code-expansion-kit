@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>퇴근 버스 잡기 v1</title>
+<style>
+  body { margin: 0; background: #1e2a3a; color: #fff; font-family: "Apple SD Gothic Neo", sans-serif;
+         display: flex; flex-direction: column; align-items: center; }
+  h1 { font-size: 22px; margin: 14px 0 6px; }
+  p.help { margin: 0 0 10px; color: #b8c4d6; font-size: 14px; }
+  canvas { background: linear-gradient(#2c3e57, #3d5a80); border-radius: 12px; max-width: 100%; }
+</style>
+</head>
+<body>
+<h1>🚌 퇴근 버스 잡기</h1>
+<p class="help">← → 로 움직이기 · 🕕 +10 · ☕ +5 · 📄 피하기 · 스페이스바로 시작</p>
+<canvas id="game" width="480" height="640"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// 떨어지는 물건 종류 (규칙 표)
+const KINDS = [
+  { icon: '🕕', score: 10, chance: 0.45 },  // 칼퇴 시계
+  { icon: '☕', score: 5,  chance: 0.20 },  // 커피 (받으면 3초 빨라짐)
+  { icon: '📄', score: 0,  chance: 0.35 },  // 야근 서류 (에너지 −1)
+];
+
+// ★★★ 상태(state): 게임의 "세이브 데이터". 화면은 이 값들을 보고 그린다 ★★★
+let state;
+function newState() {
+  return {
+    phase: 'ready',    // 게임 단계: ready(시작 전) → playing(진행 중) → over(끝)
+    score: 0,          // 점수
+    energy: 3,         // 에너지 (0이 되면 짐)
+    timeLeft: 60,      // 남은 시간(초)
+    playerX: W / 2,    // 내 위치(가로)
+    items: [],         // 떨어지는 물건 목록
+    coffeeUntil: 0,    // 커피 효과가 끝나는 시각
+    flashUntil: 0,     // 빨간 번쩍임이 끝나는 시각
+    spawnTimer: 0,     // 다음 물건이 나올 때까지 남은 시간
+    result: '',        // 끝난 이유
+  };
+}
+state = newState();
+
+// ── 입력: 지금 눌려 있는 키를 기억 ──
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (state.phase !== 'playing') { state = newState(); state.phase = 'playing'; }
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
+});
+addEventListener('keyup', e => { keys[e.key] = false; });
+
+function pickKind() {
+  let r = Math.random();
+  for (const k of KINDS) { if (r < k.chance) return k; r -= k.chance; }
+  return KINDS[0];
+}
+
+// ── 상태 변화: 매 장면마다 상태를 조금씩 바꾼다 ──
+function update(dt, now) {
+  if (state.phase !== 'playing') return;
+
+  // 1) 시간 줄이기
+  state.timeLeft -= dt;
+  if (state.timeLeft <= 0) {
+    state.timeLeft = 0;
+    state.score += state.energy * 20;   // 남은 에너지 보너스
+    state.phase = 'over';
+    state.result = 'win';
+    return;
+  }
+
+  // 2) 내 위치 바꾸기 (커피 효과 중이면 1.6배 빠름)
+  const speed = (now < state.coffeeUntil ? 520 : 320) * dt;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) state.playerX -= speed;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) state.playerX += speed;
+  state.playerX = Math.max(28, Math.min(W - 28, state.playerX));
+
+  // 3) 새 물건 만들기 (0.7초마다)
+  state.spawnTimer -= dt;
+  if (state.spawnTimer <= 0) {
+    state.spawnTimer = 0.7;
+    state.items.push({ kind: pickKind(), x: 30 + Math.random() * (W - 60), y: -30, vy: 170 + Math.random() * 60 });
+  }
+
+  // 4) 물건 떨어뜨리고, 받았는지 확인
+  const py = H - 50;
+  for (const it of state.items) {
+    it.y += it.vy * dt;
+    if (!it.gone && Math.abs(it.y - py) < 32 && Math.abs(it.x - state.playerX) < 38) {
+      it.gone = true;
+      if (it.kind.icon === '📄') {
+        state.energy -= 1;
+        state.flashUntil = now + 0.25;
+        if (state.energy <= 0) { state.phase = 'over'; state.result = 'lose'; }
+      } else {
+        state.score += it.kind.score;
+        if (it.kind.icon === '☕') state.coffeeUntil = now + 3;
+      }
+    }
+  }
+  state.items = state.items.filter(it => !it.gone && it.y < H + 40);
+}
+
+// ── 화면 갱신: 상태를 보고 그리기만 한다 (상태를 바꾸지 않음) ──
+function draw(now) {
+  ctx.clearRect(0, 0, W, H);
+
+  // 바닥
+  ctx.fillStyle = '#26364d';
+  ctx.fillRect(0, H - 22, W, 22);
+
+  // 물건
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '34px sans-serif';
+  for (const it of state.items) ctx.fillText(it.kind.icon, it.x, it.y);
+
+  // 나
+  ctx.font = '46px sans-serif';
+  ctx.fillText('🧑‍💼', state.playerX, H - 50);
+  if (now < state.coffeeUntil) { ctx.font = '18px sans-serif'; ctx.fillText('⚡', state.playerX + 26, H - 78); }
+
+  // 상태 표시줄
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(0, 0, W, 44);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 20px "Apple SD Gothic Neo", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('점수 ' + state.score, 14, 22);
+  ctx.textAlign = 'center';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('❤️'.repeat(Math.max(0, state.energy)) + '🤍'.repeat(3 - Math.max(0, state.energy)), W / 2, 22);
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 20px "Apple SD Gothic Neo", sans-serif';
+  ctx.fillText('남은 ' + Math.ceil(state.timeLeft) + '초', W - 14, 22);
+
+  // 야근 서류 맞았을 때 빨간 번쩍임
+  if (now < state.flashUntil) { ctx.fillStyle = 'rgba(255,60,60,0.3)'; ctx.fillRect(0, 0, W, H); }
+
+  // 시작 전 / 끝 안내
+  if (state.phase !== 'playing') {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 34px "Apple SD Gothic Neo", sans-serif';
+    let title = '퇴근까지 60초!';
+    if (state.phase === 'over') title = state.result === 'win' ? '🚌 버스 탑승!' : '😩 오늘도 야근…';
+    ctx.fillText(title, W / 2, H / 2 - 40);
+    ctx.font = '22px "Apple SD Gothic Neo", sans-serif';
+    if (state.phase === 'over') ctx.fillText('점수 ' + state.score, W / 2, H / 2 + 6);
+    ctx.fillStyle = '#ffd43b';
+    ctx.fillText(state.phase === 'over' ? '스페이스바로 다시 하기' : '스페이스바로 시작', W / 2, H / 2 + 50);
+  }
+}
+
+// ── 게임 반복: 1초에 약 60번 "상태 바꾸기 → 그리기" ──
+let last = performance.now();
+function loop(t) {
+  const now = t / 1000;
+  const dt = Math.min(0.05, (t - last) / 1000);
+  last = t;
+  update(dt, now);
+  draw(now);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
