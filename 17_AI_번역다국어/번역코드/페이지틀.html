@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>봄날카페 | Bomnal Cafe</title>
+  <style>
+    /* 색상표: 1단계 11번 '오늘의 온기'와 같은 색 */
+    :root {
+      --bg: #fbf7f2; --card: #ffffff; --text: #3b2f2a; --muted: #7a6a62;
+      --accent: #c26b3c; --accent-soft: #f3e3d6; --line: #eadfd5; --glow: #f6dcc8;
+      --header-bg: rgba(251, 247, 242, 0.92);
+    }
+    :root[data-theme="dark"] {
+      --bg: #1c1714; --card: #2a221e; --text: #f2e9e1; --muted: #b8a89e;
+      --accent: #e08a55; --accent-soft: #33271f; --line: #3d322b; --glow: #4a2f1f;
+      --header-bg: rgba(28, 23, 20, 0.92);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Hiragino Sans",
+                   "PingFang SC", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+      word-break: keep-all; transition: background 0.3s, color 0.3s;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    section { padding: 64px 0; scroll-margin-top: 60px; }
+    h2 { font-size: 1.6rem; margin-bottom: 28px; text-align: center; }
+
+    header {
+      position: sticky; top: 0; z-index: 10; background: var(--header-bg);
+      backdrop-filter: blur(6px); border-bottom: 1px solid var(--line);
+    }
+    nav { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 8px; }
+    .logo { font-weight: 800; color: var(--text); text-decoration: none; font-size: 1.05rem; white-space: nowrap; }
+    .tools { display: flex; align-items: center; gap: 6px; }
+
+    /* ===== 언어 선택 버튼 (새로 붙인 부분) ===== */
+    .langs { display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+    .langs button {
+      background: none; border: none; color: var(--text); font: inherit;
+      font-size: 0.85rem; padding: 6px 11px; cursor: pointer;
+    }
+    .langs button[aria-pressed="true"] { background: var(--accent); color: #fff; font-weight: 700; }
+    .theme-btn {
+      background: none; border: 1px solid var(--line); border-radius: 999px;
+      width: 36px; height: 36px; font-size: 1.05rem; cursor: pointer;
+    }
+
+    .hero {
+      text-align: center; padding: 100px 0 90px;
+      background: radial-gradient(circle at 50% 0%, var(--glow) 0%, transparent 60%), var(--bg);
+    }
+    .hero .icon { font-size: 3rem; }
+    .hero h1 { font-size: 2.6rem; margin: 12px 0; letter-spacing: -1px; }
+    .hero p { font-size: 1.1rem; color: var(--muted); margin-bottom: 30px; }
+    .btn {
+      display: inline-block; background: var(--accent); color: #fff; padding: 14px 32px;
+      border-radius: 999px; text-decoration: none; font-weight: 700;
+    }
+
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px 20px; }
+    .card .emoji { font-size: 2rem; }
+    .card h3 { margin: 8px 0 4px; font-size: 1.1rem; color: var(--accent); }
+    .card p { color: var(--muted); font-size: 0.93rem; margin-top: 8px; }
+
+    .rules { background: var(--accent-soft); }
+    .rules ul { max-width: 640px; margin: 0 auto; list-style: none; }
+    .rules li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+
+    footer { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 28px 0 40px; border-top: 1px solid var(--line); }
+
+    @media (max-width: 640px) {
+      .logo { font-size: 0.95rem; }
+      .langs button { padding: 6px 8px; font-size: 0.8rem; }
+      .hero { padding: 70px 0 60px; }
+      .hero h1 { font-size: 2rem; }
+      section { padding: 48px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap">
+      <a class="logo" href="#top" id="logo"></a>
+      <div class="tools">
+        <div class="langs" role="group" aria-label="Language">
+          <button data-lang="ko" lang="ko">한</button>
+          <button data-lang="en" lang="en">EN</button>
+          <button data-lang="ja" lang="ja">日</button>
+          <button data-lang="zh" lang="zh-CN">中</button>
+        </div>
+        <button class="theme-btn" id="themeBtn" aria-label="Dark mode">🌙</button>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="wrap">
+      <div class="icon">🌸</div>
+      <h1 id="cafe"></h1>
+      <p id="tagline"></p>
+      <a class="btn" href="#menu" id="menuBtn"></a>
+    </div>
+  </section>
+
+  <section id="menu">
+    <div class="wrap">
+      <h2 id="menuTitle"></h2>
+      <div class="menu-grid" id="menuGrid"></div>
+    </div>
+  </section>
+
+  <section class="rules">
+    <div class="wrap">
+      <h2 id="rulesTitle"></h2>
+      <ul id="rulesList"></ul>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+
+  <script>
+    // 4개 언어 글 (페이지만들기.py가 번역문 파일에서 읽어 채워 넣어요)
+    const TEXTS = /*__TEXTS__*/;
+    const EMOJI = ['🧋', '🥛', '🧇', '🍋'];
+    const HTML_LANG = { ko: 'ko', en: 'en', ja: 'ja', zh: 'zh-CN' };
+    const $ = (id) => document.getElementById(id);
+
+    // 언어 바꾸기: 정해진 칸마다 그 언어의 글로 갈아 끼워요 (textContent라 안전)
+    function setLang(lang) {
+      const t = TEXTS[lang];
+      document.documentElement.lang = HTML_LANG[lang];
+      document.title = t.cafe;
+      $('logo').textContent = t.cafe;
+      $('cafe').textContent = t.cafe;
+      $('tagline').textContent = t.tagline;
+      $('menuBtn').textContent = t.btn;
+      $('menuTitle').textContent = t.menuTitle;
+      $('rulesTitle').textContent = t.rulesTitle;
+      $('footer').textContent = '© ' + t.cafe + ' · ' + t.footer;
+
+      $('menuGrid').replaceChildren(...t.menu.map((m, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const e = document.createElement('div'); e.className = 'emoji'; e.textContent = EMOJI[i] || '☕';
+        const h = document.createElement('h3'); h.textContent = m.name;
+        const p = document.createElement('p'); p.textContent = m.desc;
+        card.append(e, h, p);
+        return card;
+      }));
+      $('rulesList').replaceChildren(...t.rules.map((r) => {
+        const li = document.createElement('li'); li.textContent = r; return li;
+      }));
+
+      document.querySelectorAll('.langs button').forEach((b) => {
+        b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false');
+      });
+      try { localStorage.setItem('lang', lang); } catch (e) {}
+    }
+
+    document.querySelectorAll('.langs button').forEach((b) => {
+      b.addEventListener('click', () => setLang(b.dataset.lang));
+    });
+
+    // 처음 열 때: 전에 고른 언어 → 없으면 브라우저 언어 → 그래도 없으면 한국어
+    let saved = null;
+    try { saved = localStorage.getItem('lang'); } catch (e) {}
+    const browser = (navigator.language || 'ko').slice(0, 2);
+    setLang(TEXTS[saved] ? saved : (TEXTS[browser] ? browser : 'ko'));
+
+    // 다크모드 스위치 (11번과 같은 방식)
+    const root = document.documentElement;
+    const themeBtn = $('themeBtn');
+    let savedTheme = null;
+    try { savedTheme = localStorage.getItem('theme'); } catch (e) {}
+    setTheme(savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+    themeBtn.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+    function setTheme(mode) {
+      root.dataset.theme = mode;
+      themeBtn.textContent = mode === 'dark' ? '☀️' : '🌙';
+    }
+  </script>
+</body>
+</html>
