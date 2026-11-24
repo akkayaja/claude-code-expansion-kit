@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "퇴근후뉴스 읽는 시간",
+  "version": "1.2",
+  "description": "연습 사이트 글 맨 위에 '읽는 데 약 N분'을 표시하고, 버튼으로 제목·본문을 복사하고, 집중 모드를 켜고 꺼요.",
+  "permissions": ["clipboardWrite"],
+  "action": {
+    "default_title": "이 글 복사하기 (AI 요약용)",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:8770/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
