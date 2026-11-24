@@ -9,13 +9,17 @@
          display: flex; flex-direction: column; align-items: center; }
   h1 { font-size: 22px; margin: 14px 0 6px; }
   p.help { margin: 0 0 10px; color: #b8c4d6; font-size: 14px; }
-  canvas { background: linear-gradient(#2c3e57, #3d5a80); border-radius: 12px; max-width: 100%; }
+  canvas { background: linear-gradient(#2c3e57, #3d5a80); border-radius: 12px;
+           width: min(480px, calc(100vw - 16px)); height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+  button#mute { margin: 8px 0 16px; background: #26364d; color: #fff; border: 1px solid #4a6285;
+                border-radius: 8px; padding: 6px 14px; font-size: 14px; }
 </style>
 </head>
 <body>
 <h1>🚌 퇴근 버스 잡기</h1>
-<p class="help">← → 로 움직이기 · 🕕 +10 · ☕ +5 · 📄 피하기 · 스페이스바로 시작</p>
+<p class="help" id="help">← → 키(휴대폰은 화면 왼쪽·오른쪽 누르기) · 🕕 +10 · ☕ +5 · 📄 피하기</p>
 <canvas id="game" width="480" height="640"></canvas>
+<button id="mute">🔊 소리 켜짐 (M)</button>
 
 <script>
 const canvas = document.getElementById('game');
@@ -61,9 +65,134 @@ function newState() {
     level: 1,          // 난이도 단계 (15초마다 +1)
     best: loadBest(),  // 최고 점수 (브라우저에 저장된 값)
     newBest: false,    // 이번 판에 최고 점수를 깼는지
+    levelFlashUntil: 0, // "N단계!" 글씨를 보여 줄 시각
   };
 }
 state = newState();
+
+// ── 효과음: 녹음 파일 없이 코드로 직접 만든 소리 (Web Audio) ──
+let audio = null, muted = false;
+function initAudio() {                 // 브라우저는 사용자가 처음 누른 뒤에만 소리를 허락함
+  if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (audio && audio.state === 'suspended') audio.resume();
+}
+// tone(시작 높이 Hz, 끝 높이 Hz, 길이 초, 파형, 늦게 시작할 초)
+function tone(f1, f2, dur, type = 'sine', delay = 0, vol = 0.18) {
+  if (!audio || muted) return;
+  const t = audio.currentTime + delay;
+  const osc = audio.createOscillator(), gain = audio.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(f1, t);
+  osc.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(gain).connect(audio.destination);
+  osc.start(t); osc.stop(t + dur);
+}
+const SOUND = {
+  clock:  () => { tone(880, 1320, 0.12, 'triangle'); },                                   // 🕕 띵↑
+  coffee: () => { tone(500, 900, 0.10, 'sine'); tone(700, 1200, 0.10, 'sine', 0.08); },   // ☕ 뽀록
+  paper:  () => { tone(220, 90, 0.30, 'sawtooth', 0, 0.12); },                            // 📄 부웅↓
+  level:  () => { tone(660, 660, 0.08, 'square', 0, 0.08); tone(990, 990, 0.12, 'square', 0.09, 0.08); },
+  win:    () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.18, 'triangle', i * 0.12)); },
+  lose:   () => { [392, 330, 262].forEach((f, i) => tone(f, f * 0.97, 0.25, 'sine', i * 0.2)); },
+};
+// ── 배경음: 코드로 직접 작곡한 4마디 반복 리듬 (단계가 오르면 빨라짐) ──
+// 화음 진행 C → Am → F → G, 한 마디 = 16칸(16분음표)
+const BGM = {
+  playing: false, step: 0, nextTime: 0, timer: null,
+  chords: [[130.8, 261.6, 329.6, 392.0], [110.0, 220.0, 261.6, 329.6],   // [베이스, 화음 3개]
+           [87.3, 174.6, 220.0, 261.6], [98.0, 196.0, 246.9, 293.7]],
+  bassSteps:  [0, 3, 6, 8, 11, 14],          // 베이스가 '둥' 하는 칸 (엇박으로 리듬감)
+  kickSteps:  [0, 8],                        // 쿵
+  snareSteps: [4, 12],                       // 착
+  arpSteps:   [0, 2, 5, 7, 10, 12, 13, 15],  // 화음을 한 음씩 '띠리리'
+};
+let noiseBuf = null;
+function noise(t, dur, vol, hp) {            // 치익(하이햇)·착(스네어)용 잡음
+  if (!noiseBuf) {
+    noiseBuf = audio.createBuffer(1, audio.sampleRate * 0.3, audio.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+  src.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(f).connect(g).connect(audio.destination);
+  src.start(t); src.stop(t + dur);
+}
+function note(t, freq, dur, type, vol, endFreq) {
+  const osc = audio.createOscillator(), g = audio.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(g).connect(audio.destination);
+  osc.start(t); osc.stop(t + dur);
+}
+function bgmStepSeconds() {                  // 1단계 120 BPM → 단계마다 +12 BPM
+  const bpm = 120 + 12 * (state.level - 1);
+  return 60 / bpm / 4;
+}
+function playStep(t) {
+  const bar = Math.floor(BGM.step / 16) % 4, s16 = BGM.step % 16;
+  const [bass, ...chord] = BGM.chords[bar];
+  if (!muted) {
+    if (BGM.kickSteps.includes(s16))  note(t, 120, 0.15, 'sine', 0.35, 45);
+    if (BGM.snareSteps.includes(s16)) noise(t, 0.12, 0.12, 1500);
+    if (s16 % 2 === 0)                noise(t, 0.03, 0.04, 7000);
+    if (BGM.bassSteps.includes(s16))  note(t, bass, 0.16, 'triangle', 0.16);
+    if (BGM.arpSteps.includes(s16))   note(t, chord[s16 % 3] * 2, 0.09, 'square', 0.025);
+  }
+  BGM.step = (BGM.step + 1) % 64;
+}
+function bgmTick() {                         // 0.12초 앞까지 미리 예약 (박자가 흔들리지 않게)
+  while (BGM.nextTime < audio.currentTime + 0.12) {
+    playStep(BGM.nextTime);
+    BGM.nextTime += bgmStepSeconds();
+  }
+}
+function startBgm() {
+  if (!audio || BGM.playing) return;
+  BGM.playing = true; BGM.step = 0; BGM.nextTime = audio.currentTime + 0.05;
+  BGM.timer = setInterval(bgmTick, 25);
+}
+function stopBgm() { BGM.playing = false; clearInterval(BGM.timer); }
+
+const muteBtn = document.getElementById('mute');
+function toggleMute() { muted = !muted; muteBtn.textContent = muted ? '🔇 소리 꺼짐 (M)' : '🔊 소리 켜짐 (M)'; }
+muteBtn.addEventListener('click', () => { initAudio(); toggleMute(); muteBtn.blur(); });
+
+function startGame() {
+  initAudio();
+  if (state.phase !== 'playing') { state = newState(); state.phase = 'playing'; startBgm(); }
+}
+
+// ── 터치(휴대폰): 화면 왼쪽 절반을 누르고 있으면 ←, 오른쪽 절반이면 → ──
+const touch = { left: false, right: false };
+const pointers = new Map();
+function updateTouch() {
+  touch.left = touch.right = false;
+  for (const side of pointers.values()) touch[side] = true;
+}
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (state.phase !== 'playing') { startGame(); return; }   // 시작 전·끝난 뒤에는 누르면 시작
+  const r = canvas.getBoundingClientRect();
+  pointers.set(e.pointerId, (e.clientX - r.left) < r.width / 2 ? 'left' : 'right');
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}  // 손가락이 화면 밖으로 나가도 계속 추적
+  updateTouch();
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  const r = canvas.getBoundingClientRect();
+  pointers.set(e.pointerId, (e.clientX - r.left) < r.width / 2 ? 'left' : 'right');
+  updateTouch();
+});
+for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, e => { pointers.delete(e.pointerId); updateTouch(); });
+if (matchMedia('(pointer: coarse)').matches) {
+  document.getElementById('help').textContent = '화면 왼쪽·오른쪽을 누르고 있으면 움직여요 · 🕕 +10 · ☕ +5 · 📄 피하기';
+}
 
 // ── 입력: 지금 눌려 있는 키를 기억 ──
 const keys = {};
@@ -71,8 +200,9 @@ addEventListener('keydown', e => {
   keys[e.key] = true;
   if (e.key === ' ') {
     e.preventDefault();
-    if (state.phase !== 'playing') { state = newState(); state.phase = 'playing'; }
+    startGame();
   }
+  if (e.key === 'm' || e.key === 'M') { initAudio(); toggleMute(); }
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.key] = false; });
@@ -88,6 +218,8 @@ function pickKind(level) {
 function endGame(result) {
   state.phase = 'over';
   state.result = result;
+  stopBgm();
+  (result === 'win' ? SOUND.win : SOUND.lose)();
   if (state.score > state.best) { state.best = state.score; state.newBest = true; saveBest(state.score); }
 }
 
@@ -103,13 +235,15 @@ function update(dt, now) {
     endGame('win');
     return;
   }
-  state.level = 1 + Math.floor((60 - state.timeLeft) / LEVEL_SECONDS);
+  const newLevel = 1 + Math.floor((60 - state.timeLeft) / LEVEL_SECONDS);
+  if (newLevel > state.level) { SOUND.level(); state.levelFlashUntil = now + 1.2; }
+  state.level = newLevel;
   const lv = levelInfo(state.level);
 
   // 2) 내 위치 바꾸기 (커피 효과 중이면 1.6배 빠름)
   const speed = (now < state.coffeeUntil ? 520 : 320) * dt;
-  if (keys['ArrowLeft'] || keys['a'] || keys['A']) state.playerX -= speed;
-  if (keys['ArrowRight'] || keys['d'] || keys['D']) state.playerX += speed;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A'] || touch.left) state.playerX -= speed;
+  if (keys['ArrowRight'] || keys['d'] || keys['D'] || touch.right) state.playerX += speed;
   state.playerX = Math.max(28, Math.min(W - 28, state.playerX));
 
   // 3) 새 물건 만들기 (0.7초마다)
@@ -128,10 +262,11 @@ function update(dt, now) {
       if (it.kind.icon === '📄') {
         state.energy -= 1;
         state.flashUntil = now + 0.25;
+        if (state.energy > 0) SOUND.paper();
         if (state.energy <= 0) endGame('lose');
       } else {
         state.score += it.kind.score;
-        if (it.kind.icon === '☕') state.coffeeUntil = now + 3;
+        if (it.kind.icon === '☕') { state.coffeeUntil = now + 3; SOUND.coffee(); } else SOUND.clock();
       }
     }
   }
@@ -175,6 +310,14 @@ function draw(now) {
   ctx.font = 'bold 20px "Apple SD Gothic Neo", sans-serif';
   ctx.fillText('남은 ' + Math.ceil(state.timeLeft) + '초', W - 14, 22);
 
+  // 단계가 오르면 가운데에 "N단계!"
+  if (state.phase === 'playing' && now < state.levelFlashUntil) {
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 40px "Apple SD Gothic Neo", sans-serif';
+    ctx.fillStyle = '#ffd43b';
+    ctx.fillText(state.level + '단계! 빨라져요', W / 2, H / 2 - 60);
+  }
+
   // 야근 서류 맞았을 때 빨간 번쩍임
   if (now < state.flashUntil) { ctx.fillStyle = 'rgba(255,60,60,0.3)'; ctx.fillRect(0, 0, W, H); }
 
@@ -192,7 +335,7 @@ function draw(now) {
     if (state.phase === 'over') ctx.fillText('점수 ' + state.score + (state.newBest ? '  🏆 최고 기록!' : '  (최고 ' + state.best + ')'), W / 2, H / 2 + 6);
     else ctx.fillText('최고 점수 ' + state.best + ' · 15초마다 빨라져요', W / 2, H / 2 + 6);
     ctx.fillStyle = '#ffd43b';
-    ctx.fillText(state.phase === 'over' ? '스페이스바로 다시 하기' : '스페이스바로 시작', W / 2, H / 2 + 50);
+    ctx.fillText(state.phase === 'over' ? '스페이스바·화면 누르기로 다시' : '스페이스바·화면 누르기로 시작', W / 2, H / 2 + 50);
   }
 }
 
