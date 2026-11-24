@@ -2,7 +2,7 @@
 // 처음 열 때 아래 파일들을 보관함(캐시)에 넣어 두고,
 // 다음부터는 인터넷보다 보관함을 먼저 봐서 비행기 모드에서도 열려요.
 // 앱을 고치면 VERSION 숫자를 올려야 휴대폰이 새 파일로 바꿔요.
-const VERSION = 'water-v1';
+const VERSION = 'water-v2';
 const FILES = [
   './',
   './index.html',
